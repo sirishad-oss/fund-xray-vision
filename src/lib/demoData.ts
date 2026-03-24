@@ -30,6 +30,25 @@ export interface AIInsight {
 
 export interface RedFlag {
   message: string;
+  severity: "high" | "medium" | "low";
+}
+
+export interface ActionRecommendation {
+  action: string;
+  impact: string;
+  projectedScoreChange: number;
+  category: "rebalance" | "switch" | "reduce" | "add";
+}
+
+export interface BenchmarkData {
+  label: string;
+  portfolioReturn: number;
+  benchmarkReturn: number;
+}
+
+export interface RiskRadarData {
+  axis: string;
+  value: number;
 }
 
 export interface PortfolioData {
@@ -38,6 +57,9 @@ export interface PortfolioData {
   scoreBreakdown: ScoreBreakdown;
   insights: AIInsight[];
   redFlags: RedFlag[];
+  recommendations: ActionRecommendation[];
+  benchmarks: BenchmarkData[];
+  riskRadar: RiskRadarData[];
 }
 
 export const DEMO_DATA: PortfolioData = {
@@ -68,8 +90,29 @@ export const DEMO_DATA: PortfolioData = {
     { icon: "⚖️", title: "Rebalance Small Cap Allocation", description: "Your small cap allocation is 14% — slightly aggressive for a moderate risk profile. Consider capping at 10-12%." },
   ],
   redFlags: [
-    { message: "ICICI Pru Value Discovery has underperformed its benchmark by 4.8% over 3 years." },
-    { message: "34% portfolio overlap detected — this reduces effective diversification." },
-    { message: "Total expense ratio across portfolio is 1.52% — above the 1.2% recommended threshold." },
+    { message: "ICICI Pru Value Discovery has underperformed its benchmark by 4.8% over 3 years.", severity: "high" },
+    { message: "34% portfolio overlap detected — this reduces effective diversification.", severity: "high" },
+    { message: "Total expense ratio across portfolio is 1.52% — above the 1.2% recommended threshold.", severity: "medium" },
+    { message: "No international diversification — 100% India exposure increases geo risk.", severity: "low" },
+  ],
+  recommendations: [
+    { action: "Consolidate HDFC Mid-Cap and Kotak Emerging into one fund", impact: "Reduces overlap from 34% to 18%, improving diversification score", projectedScoreChange: 8, category: "rebalance" },
+    { action: "Switch ICICI Pru Value Discovery to a better-performing value fund", impact: "Expected XIRR improvement of 4-6% based on category peers", projectedScoreChange: 6, category: "switch" },
+    { action: "Reduce small cap allocation from 14% to 10%", impact: "Better risk alignment for moderate profile, lower volatility", projectedScoreChange: 3, category: "reduce" },
+    { action: "Add an international fund (10-15% allocation)", impact: "Geographic diversification reduces country-specific risk", projectedScoreChange: 5, category: "add" },
+  ],
+  benchmarks: [
+    { label: "1Y Returns", portfolioReturn: 15.3, benchmarkReturn: 12.8 },
+    { label: "3Y Returns", portfolioReturn: 14.1, benchmarkReturn: 13.5 },
+    { label: "5Y Returns", portfolioReturn: 12.6, benchmarkReturn: 14.2 },
+    { label: "Risk (Std Dev)", portfolioReturn: 16.2, benchmarkReturn: 14.8 },
+  ],
+  riskRadar: [
+    { axis: "Market Risk", value: 68 },
+    { axis: "Concentration", value: 55 },
+    { axis: "Expense Efficiency", value: 70 },
+    { axis: "Sector Diversification", value: 48 },
+    { axis: "Volatility", value: 62 },
+    { axis: "Liquidity", value: 85 },
   ],
 };
