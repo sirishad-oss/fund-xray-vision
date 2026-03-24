@@ -1,16 +1,56 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useCallback } from "react";
+import UploadScreen from "@/components/UploadScreen";
+import LoadingScreen from "@/components/LoadingScreen";
+import Dashboard from "@/components/Dashboard";
+import ErrorScreen from "@/components/ErrorScreen";
+import { uploadStatement, analyzeDemoPortfolio } from "@/lib/api";
+import type { PortfolioData } from "@/lib/demoData";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+type Screen = "upload" | "loading" | "dashboard" | "error";
+
+const Index = () => {
+  const [screen, setScreen] = useState<Screen>("upload");
+  const [data, setData] = useState<PortfolioData | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
+  const startAnalysis = useCallback(async (file: File | null) => {
+    setScreen("loading");
+    try {
+      const result = file ? await uploadStatement(file) : await analyzeDemoPortfolio();
+      setData(result);
+    } catch {
+      setScreen("error");
+    }
+  }, []);
+
+  const handleUpload = useCallback((file: File) => {
+    setPendingFile(file);
+    startAnalysis(file);
+  }, [startAnalysis]);
+
+  const handleDemo = useCallback(() => {
+    setPendingFile(null);
+    startAnalysis(null);
+  }, [startAnalysis]);
+
+  const handleLoadingComplete = useCallback(() => {
+    if (data) setScreen("dashboard");
+    else setScreen("error");
+  }, [data]);
+
+  const handleRetry = useCallback(() => {
+    setScreen("upload");
+    setData(null);
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
+    <>
+      {screen === "upload" && <UploadScreen onUpload={handleUpload} onDemo={handleDemo} />}
+      {screen === "loading" && <LoadingScreen onComplete={handleLoadingComplete} />}
+      {screen === "dashboard" && data && <Dashboard data={data} />}
+      {screen === "error" && <ErrorScreen onRetry={handleRetry} />}
+    </>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
