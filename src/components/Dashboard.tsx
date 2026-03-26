@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Download, TrendingUp, Wallet, Layers, DollarSign, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,10 @@ import RiskRadar from "./dashboard/RiskRadar";
 import RedFlagsSection from "./dashboard/RedFlagsSection";
 import ScoreBreakdownSection from "./dashboard/ScoreBreakdownSection";
 import ScenarioSimulator from "./dashboard/ScenarioSimulator";
+import FundOverlapHeatmap from "./dashboard/FundOverlapHeatmap";
+import RiskProfileSelector, { type RiskProfile } from "./dashboard/RiskProfileSelector";
+import AIChatBox from "./dashboard/AIChatBox";
+import { generatePDFReport } from "@/lib/generateReport";
 
 interface DashboardProps {
   data: PortfolioData;
@@ -27,7 +32,26 @@ const StatusBadge = ({ status }: { status: Fund["status"] }) => {
   return <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${styles[status]}`}>{status}</span>;
 };
 
-const Dashboard = ({ data }: DashboardProps) => {
+// Adjust scores based on risk profile
+const adjustForProfile = (data: PortfolioData, profile: RiskProfile): PortfolioData => {
+  if (profile === "moderate") return data;
+  const modifier = profile === "conservative" ? -5 : 5;
+  return {
+    ...data,
+    metrics: {
+      ...data.metrics,
+      healthScore: Math.max(0, Math.min(100, data.metrics.healthScore + modifier)),
+    },
+    scoreBreakdown: {
+      ...data.scoreBreakdown,
+      riskAlignment: Math.max(0, Math.min(100, data.scoreBreakdown.riskAlignment + (profile === "conservative" ? -10 : 8))),
+    },
+  };
+};
+
+const Dashboard = ({ data: rawData }: DashboardProps) => {
+  const [riskProfile, setRiskProfile] = useState<RiskProfile>("moderate");
+  const data = adjustForProfile(rawData, riskProfile);
   const { funds, metrics, scoreBreakdown, insights, redFlags, recommendations, benchmarks, riskRadar } = data;
 
   return (
@@ -38,6 +62,9 @@ const Dashboard = ({ data }: DashboardProps) => {
           <h1 className="text-3xl font-bold font-display text-foreground mb-1">Your Portfolio X-Ray</h1>
           <p className="text-muted-foreground">Here's what we found in your mutual fund portfolio</p>
         </motion.div>
+
+        {/* Risk Profile Selector */}
+        <RiskProfileSelector selected={riskProfile} onChange={setRiskProfile} />
 
         {/* Health Score */}
         <div className="flex justify-center mb-10 relative h-[180px]">
@@ -57,6 +84,9 @@ const Dashboard = ({ data }: DashboardProps) => {
           recommendations={recommendations}
           currentScore={metrics.healthScore}
         />
+
+        {/* Fund Overlap Heatmap */}
+        <FundOverlapHeatmap funds={funds} />
 
         {/* Risk Radar */}
         <RiskRadar data={riskRadar} />
@@ -135,10 +165,13 @@ const Dashboard = ({ data }: DashboardProps) => {
         <ScenarioSimulator currentValue={metrics.totalValue} currentXirr={metrics.xirr} />
       </div>
 
+      {/* AI Chat */}
+      <AIChatBox data={data} />
+
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-border p-4">
         <div className="max-w-5xl mx-auto flex justify-center">
-          <Button size="lg" className="gap-2 px-8">
+          <Button size="lg" className="gap-2 px-8" onClick={() => generatePDFReport(data)}>
             <Download className="h-4 w-4" />
             Download Full Report
           </Button>
